@@ -45,7 +45,7 @@ class DtoolExport(Interface):
                    valid identifier of a Dataset (e.g. a path) or value must be 
                    NONE.""",
             constraints=EnsureDataset() | EnsureNone()),
-        target=Parameter(
+        base_uri=Parameter(
             args=("base_uri",),
             nargs='?',
             metavar="BASE_URI",
@@ -96,21 +96,23 @@ class DtoolExport(Interface):
         repo = dataset.repo
         # committed_date = repo.get_commit_date()
 
-        datald_dataset_root_path = dataset.path
-        lgr.debug("Export datalad dataset at '%s'", datald_dataset_root_path)
+        datalad_dataset_root_path = dataset.path
+        lgr.debug("Export datalad dataset at '%s'", datalad_dataset_root_path)
         if name is None:
-            name = os.path.split(datald_dataset_root_path)[-1]
+            name = os.path.split(datalad_dataset_root_path)[-1]
 
         lgr.debug("Export to dtool dataset of name '%s' at base URI '%s'",
-                  (name, sanitised_base_uri))
+                  name, sanitised_base_uri)
+
+
+        repo_files = repo.get_content_info(ref='HEAD', untracked='no')
+        if isinstance(repo, AnnexRepo):
+            # add availability (has_content) info
+            repo_files = repo.get_content_annexinfo(ref='HEAD',
+                                                    init=repo_files,
+                                                    eval_availability=True)
 
         with DataSetCreator(name=name, base_uri=sanitised_base_uri) as dtool_dataset_creator:
-            repo_files = repo.get_content_info(ref='HEAD', untracked='no')
-            if isinstance(repo, AnnexRepo):
-                # add availability (has_content) info
-                repo_files = repo.get_content_annexinfo(ref='HEAD',
-                                                        init=repo_files,
-                                                        eval_availability=True)
 
             uri = dtool_dataset_creator.proto_dataset.uri
             lgr.debug("Created dataset will be available at '%s'", uri)
@@ -123,28 +125,19 @@ class DtoolExport(Interface):
                         continue
                     else:
                         raise IOError('File %s has no content available' % p)
-                # repath in the dtool dataset
-                relpath = p.relative_to(repo.pathobj)
-                fpath = dtool_dataset_creator.prepare_staging_abspath_promise(handle)
-                # with open(fpath, "w") as fh:
-                handle = dtool_dataset_creator.put_item(fpath, relpath)
 
-                msg = f"Added item {handle}: {relpath} to dataset"
-                yield get_status_dict(
-                    # an action label must be defined, the command name make a good
-                    # default
-                    action='export-dtool',
-                    # most results will be about something associated with a dataset
-                    # (component), reported paths MUST be absolute
-                    path=abspath(curdir),
-                    # status labels are used to identify how a result will be reported
-                    # and can be used for filtering
-                    status='ok',
-                    # arbitrary result message, can be a str or tuple. in the latter
-                    # case string expansion with arguments is delayed until the
-                    # message actually needs to be rendered (analog to exception
-                    # messages)
-                    message=msg)
+                # repath in the dtool dataset
+                relpath = str(p.relative_to(repo.pathobj))
+
+                in_fpath = p if 'key' not in props else props['objloc']
+
+                lgr.debug(f"Write content of '%s' physically located at '%s'.",
+                          relpath, in_fpath)
+
+                handle = dtool_dataset_creator.put_item(in_fpath, relpath)
+
+                lgr.debug("Added item '{handle}' to dtool dataset '{uri}'.",
+                          handle, uri)
 
         yield get_status_dict(
             # an action label must be defined, the command name make a good
@@ -160,4 +153,4 @@ class DtoolExport(Interface):
             # case string expansion with arguments is delayed until the
             # message actually needs to be rendered (analog to exception
             # messages)
-            message=f"Created and froze dtool dataset {uri}.")
+            message=f"Created and froze dtool dataset '{uri}'.")

@@ -10,18 +10,18 @@ lgr = logging.getLogger('datalad.dtool')
 # to be found by datalad
 command_suite = (
     # description of the command suite, displayed in cmdline help
-    "Demo DataLad command suite",
+    "DataLad-dtool command suite",
     [
         # specification of a command, any number of commands can be defined
         (
             # importable module that contains the command implementation
-            'datalad_dtool.hello_cmd',
+            'datalad_dtool.export',
             # name of the command class implementation in above module
-            'HelloWorld',
+            'DtoolExport',
             # optional name of the command in the cmdline API
-            'hello-cmd',
+            'export-dtool',
             # optional name of the command in the Python API
-            'hello_cmd'
+            'export_dtool'
         ),
     ]
 )
