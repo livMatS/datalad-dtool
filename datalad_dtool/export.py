@@ -62,13 +62,21 @@ class DtoolExport(Interface):
         missing_content=Parameter(
             args=("--missing-content",),
             doc="""By default, any discovered file with missing content will
-                result in an error and the export is aborted. Setting this to
-                'continue' will issue warnings instead of failing on error. The
-                value 'ignore' will only inform about problem at the 'debug' log
-                level. The latter two can be helpful when generating a TAR archive
-                from a dataset where some file content is not available
-                locally.""",
+                   result in an error and the export is aborted. Setting this to
+                   'continue' will issue warnings instead of failing on error.
+                   The value 'ignore' will only inform about problem at the
+                   'debug' log level. The latter two can be helpful when
+                   generating a TAR archive from a dataset where some file
+                   content is not available locally.""",
             constraints=EnsureChoice("error", "continue", "ignore")),
+        suppress_provenance_annotations=Parameter(
+            args=("--suppress-provenance-annotations",),
+            action="store_true",
+            doc="""By default, the export will annotate the freshly created
+                   dtool dataset with the DataLad dataset UUID and commit in
+                   the fields 'datalad-uuid' and 'datalad-commit'. This option
+                   suppresses this behavior.
+                   """),
     )
 
     @staticmethod
@@ -82,7 +90,8 @@ class DtoolExport(Interface):
                  *,
                  name=None,
                  dataset=None,
-                 missing_content='error'):
+                 missing_content='error',
+                 suppress_provenance_annotations=False):
         # commands should be implemented as generators and should
         # report any results by yielding status dictionaries
         if base_uri is None:
@@ -95,15 +104,17 @@ class DtoolExport(Interface):
 
         repo = dataset.repo
         # committed_date = repo.get_commit_date()
+        datalad_uuid = dataset.id
+        datalad_commit = repo.get_hexsha()
 
         datalad_dataset_root_path = dataset.path
-        lgr.debug("Export datalad dataset at '%s'", datalad_dataset_root_path)
+        lgr.debug("Export datalad dataset '%s' (commit '%s') at '%s'",
+                  datalad_uuid, datalad_commit, datalad_dataset_root_path)
         if name is None:
             name = os.path.split(datalad_dataset_root_path)[-1]
 
         lgr.debug("Export to dtool dataset of name '%s' at base URI '%s'",
                   name, sanitised_base_uri)
-
 
         repo_files = repo.get_content_info(ref='HEAD', untracked='no')
         if isinstance(repo, AnnexRepo):
@@ -116,6 +127,10 @@ class DtoolExport(Interface):
 
             uri = dtool_dataset_creator.proto_dataset.uri
             lgr.debug("Created dataset will be available at '%s'", uri)
+
+            if not suppress_provenance_annotations:
+                dtool_dataset_creator.put_annotation("datalad-uuid", datalad_uuid)
+                dtool_dataset_creator.put_annotation("datalad-commit", datalad_commit)
 
             for p, props in repo_files.items():
                 if 'key' in props and not props.get('has_content', False):
@@ -136,7 +151,7 @@ class DtoolExport(Interface):
 
                 handle = dtool_dataset_creator.put_item(in_fpath, relpath)
 
-                lgr.debug("Added item '{handle}' to dtool dataset '{uri}'.",
+                lgr.debug("Added item '%s' to dtool dataset '%s'.",
                           handle, uri)
 
         yield get_status_dict(
