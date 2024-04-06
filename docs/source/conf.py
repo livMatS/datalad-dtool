@@ -89,9 +89,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Datalad Extension Template'
-copyright = u'2018-{}, DataLad team'.format(datetime.datetime.now().year)
-author = u'DataLad team'
+project = u'Datalad dtool Extension '
+copyright = u'2024-{}, distribits'.format(datetime.datetime.now().year)
+author = u'distribits 2024 hackathon'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
