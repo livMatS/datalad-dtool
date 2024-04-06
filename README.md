@@ -1,54 +1,29 @@
-# DataLad extension template
+# DataLad dtool extension
 
-[![Build status](https://ci.appveyor.com/api/projects/status/g9von5wtpoidcecy/branch/main?svg=true)](https://ci.appveyor.com/project/mih/datalad-extension-template/branch/main) [![codecov.io](https://codecov.io/github/datalad/datalad-extension-template/coverage.svg?branch=main)](https://codecov.io/github/datalad/datalad-extension-template?branch=main) [![crippled-filesystems](https://github.com/datalad/datalad-extension-template/workflows/crippled-filesystems/badge.svg)](https://github.com/datalad/datalad-extension-template/actions?query=workflow%3Acrippled-filesystems) [![docs](https://github.com/datalad/datalad-extension-template/workflows/docs/badge.svg)](https://github.com/datalad/datalad-extension-template/actions?query=workflow%3Adocs)
+[![crippled-filesystems](https://github.com/livMatS/datalad-dtool/workflows/crippled-filesystems/badge.svg)](https://github.com/livMatS/datalad-dtool/actions?query=workflow%3Acrippled-filesystems) [![docs](https://github.com/livMatS/datalad-dtool/workflows/docs/badge.svg)](https://github.com/datalad/datalad-extension-template/actions?query=workflow%3Adocs)
 
+This repository has been created during the [distribits 2024 hackathon](https://github.com/distribits/distribits-2024-hackathon).
 
-This repository contains an extension template that can serve as a starting point
-for implementing a [DataLad](http://datalad.org) extension. An extension can
-provide any number of additional DataLad commands that are automatically
-included in DataLad's command line and Python API.
+The challange has been posed as https://github.com/distribits/distribits-2024-hackathon/tree/14013438ad833878de26dcbd02d2dc29a9b4a40e/datalad-dtool-interoperability and discussed at https://github.com/distribits/distribits-2024-hackathon/issues/10.
 
-For a demo, clone this repository and install the demo extension via
+It suggests a simple extension to DataLad that creates a dtool dataset from a 
+DataLad dataset.
 
-    pip install -e .
+Since
 
-DataLad will now expose a new command suite with a `hello...` command.
+* dtool datasets have UUIDs, and DataLad datsets as well, and
+* dtool datasets are immutable, while DataLad datasets are versioned.
 
-    % datalad --help |grep -B2 -A2 hello
-    *Demo DataLad command suite*
+we can export a dtool dataset as a "snapshot" of a versioned datalad dataset, 
+with the unique mapping
 
-      hello-cmd
-          Short description of the command
+    dtool dataset UUID <-> (datalad dataset UUID, commit)
 
-To start implementing your own extension, [use this
-template](https://github.com/datalad/datalad-extension-template/generate), and
-adjust as necessary. A good approach is to
+This is done with the
 
-- Pick a name for the new extension.
-- Look through the sources and replace `dtool` with
-  `<newname>` (hint: `git grep helloworld` should find all
-  spots).
-- Delete the example command implementation in `datalad_helloworld/hello_cmd.py`.
-- Implement a new command, and adjust the `command_suite` in
-  `datalad_helloworld/__init__.py` to point to it.
-- Replace `hello_cmd` with the name of the new command in
-  `datalad_helloworld/tests/test_register.py` to automatically test whether the
-  new extension installs correctly.
-- Adjust the documentation in `docs/source/index.rst`. Refer to [`docs/README.md`](docs/README.md) for more information on documentation building, testing and publishing.
-- Replace this README, and/or update the links in the badges at the top.
-- Update `setup.cfg` with appropriate metadata on the new extension.
-- Generate GitHub labels for use by the "Add changelog.d snippet" and
-  "Auto-release on PR merge" workflows by using the code in the
-  `datalad/release-action` repository [as described in its
-  README](https://github.com/datalad/release-action#command-labels).
+    datalad export-dtool
 
-You can consider filling in the provided [.zenodo.json](.zenodo.json) file with
-contributor information and [meta data](https://developers.zenodo.org/#representation)
-to acknowledge contributors and describe the publication record that is created when
-[you make your code citeable](https://guides.github.com/activities/citable-code/)
-by archiving it using [zenodo.org](https://zenodo.org/). You may also want to
-consider acknowledging contributors with the
-[allcontributors bot](https://allcontributors.org/docs/en/bot/overview).
+command. For detailed usage information, see `datalad export-dtool --help`
 
 # Contributing
 

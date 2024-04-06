@@ -1,9 +1,9 @@
 {
   "creators": [
     {
-      "affiliation": "Edit me!",
-      "name": "Edit me!",
-      "orcid": "Edit me!"
+      "affiliation": "University of Freiburg",
+      "name": "Johannes L. Hörmann",
+      "orcid": "0000-0001-5867-695X"
     },
     {
       "affiliation": "Edit me!",
@@ -18,6 +18,6 @@
     "version control"
   ],
   "access_right": "open",
-  "license": "Edit me!",
+  "license": "MIT",
   "upload_type": "software"
 }
