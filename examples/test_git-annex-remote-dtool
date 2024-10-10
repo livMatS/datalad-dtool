@@ -14,9 +14,14 @@ export HOME="$TMP"
 SOURCE_DATASET="file://$TMP/test-dataset"
 SOURCE_DATASET_NAME="test-dataset"
 REPO_DIR="$TMP/repo"
-# mkdir -p "$REMOTE_DIR"
 cd "$TMP"
+
+echo "This is a test file." > testfile.txt
+
+TESTFILE_PATH="$TMP/testfile.txt"
+
 dtool create ${SOURCE_DATASET_NAME}
+
 mkdir -p "$REPO_DIR"
 
 cd "$REPO_DIR"
@@ -24,5 +29,26 @@ git init
 git config user.email "someuser@gmail.com"
 git config user.name "Some User"
 git annex init
+
+cp ${TESTFILE_PATH} .
+git annex add testfile.txt
+git commit -m "Add test file to git annex"
+
+# get git annex-generated key
+ANNEX_KEY=$(git annex lookupkey testfile.txt)
+
+# put item into dataset at git annex-expected key
+dtool add item testfile.txt "${SOURCE_DATASET}" "${ANNEX_KEY}"
+dtool freeze "${SOURCE_DATASET}"
+
 git annex initremote --verbose --debug dtool_remote type=external externaltype=dtool encryption=none uri="${SOURCE_DATASET}"
-git annex testremote --verbose --debug dtool_remote  2>&1 | tail -n 1000
+
+git annex info
+
+SPECIAL_REMOTE_UUID=$(git config --get remote.dtool_remote.annex-uuid)
+
+# tell git annex that file is retrievable from special remote
+git annex setpresentkey "${ANNEX_KEY}" "${SPECIAL_REMOTE_UUID}" 1
+
+# test read-only special remote
+git annex testremote --verbose --debug dtool_remote --test-readonly=testfile.txt 2>&1 | tail -n 1000
