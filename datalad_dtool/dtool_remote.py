@@ -54,10 +54,9 @@ class DtoolRemote(SpecialRemote):
         # return True if the key is present in the remote
         # return False if the key is not present
         # raise RemoteError if the presence of the key couldn't be determined, eg. in case of connection error
-        logger.debug("Looking for item %s in dataset %s", key, self.uri)
-
         urls = self.annex.geturls(key, "dtool:")
 
+        exceptions = []
         for url in urls:
             url = url[len('dtool:'):]
             try:
@@ -73,17 +72,11 @@ class DtoolRemote(SpecialRemote):
             except Exception as e:
                 exceptions.append(e)
 
+        if len(exceptions) > 0:
+            raise exceptions[-1]
+        
         return False
 
-        logger.debug("Present at %s", urls)
-
-        if isinstance(self.dtool_dataset, ProtoDataSet):
-            self.dtool_dataset.freeze()
-            self.dtool_dataset = DataSet.from_uri(self.uri)
-
-
-
-        return False
 
     def claimurl(self, url: str) -> bool:
         return url.startswith("dtool:")
