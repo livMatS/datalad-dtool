@@ -17,48 +17,38 @@ class DtoolRemote(SpecialRemote):
 
     def __init__(self, annex):
         super().__init__(annex)
-        self.configs = {
-            'uri': "dtool dataset URI"
-        }
 
     def initremote(self) -> None:
         # initialize the remote, e.g. create the folders
         # raise RemoteError if the remote couldn't be initialized
-        self.uri = self.annex.getconfig("uri")
-        if not self.uri:
-            raise RemoteError("You need to set uri=")
-        logger.debug("Set dtool dataset uri=%s", self.uri)
+        pass
 
     def prepare(self) -> None:
         # prepare to be used, eg. open TCP connection, authenticate with the server etc.
         # raise RemoteError if not ready to use
-        self.uri = self.annex.getconfig("uri")
-        try:
-            self.dtool_dataset = DataSet.from_uri(self.uri)
-            logger.debug("Dataset uri=%s frozen, immutable.", self.uri)
-        except DtoolCoreTypeError as exc:
-            logger.warning(exc)
-            self.dtool_dataset = ProtoDataSet.from_uri(self.uri)
+        pass
 
     def transfer_retrieve(self, key, filename):
         # get the file identified by `key` and store it to `filename`
         # raise RemoteError if the file couldn't be retrieved
+        urls = self.annex.geturls(key, "dtool:")
+        logger.debug("Retrieve from %s", urls)
 
-        if isinstance(self.dtool_dataset, ProtoDataSet):
-            self.dtool_dataset.freeze()
-            self.dtool_dataset = DataSet.from_uri(self.uri)
-
-        manifest = self.dtool_dataset.generate_manifest()
-        for uuid, entry in manifest['items'].items():
-            if entry["relpath"] == key:
-                try:
-                    fpath = self.dtool_dataset.item_content_abspath(uuid)
-                except Exception as e:
-                    raise RemoteError(e)
+        exceptions = []
+        for url in urls:
+            url = url[len('dtool:'):]
+            try:
+                dataset_uri, item_uuid = url.rsplit('/', 1)
+                logger.debug("Try to retrieve item %s from dataset %s", item_uuid, dataset_uri)
+                dtool_dataset = DataSet.from_uri(dataset_uri)
+                fpath = dtool_dataset.item_content_abspath(item_uuid)
+                logger.debug("Cached item content at %s", fpath)
                 shutil.copyfile(fpath, filename)
-                return
-
-        raise RemoteError()
+                break
+            except Exception as e:
+                exceptions.append(e)
+        else:
+            raise RemoteError(exceptions)
 
     def checkpresent(self, key):
         # return True if the key is present in the remote
@@ -66,22 +56,40 @@ class DtoolRemote(SpecialRemote):
         # raise RemoteError if the presence of the key couldn't be determined, eg. in case of connection error
         logger.debug("Looking for item %s in dataset %s", key, self.uri)
 
+        urls = self.annex.geturls(key, "dtool:")
+
+        for url in urls:
+            url = url[len('dtool:'):]
+            try:
+                dataset_uri, item_uuid = url.rsplit('/', 1)
+                logger.debug("Try to locate item %s in dataset %s", item_uuid, dataset_uri)
+
+                dtool_dataset = DataSet.from_uri(dataset_uri)
+                manifest = dtool_dataset.generate_manifest()
+                if item_uuid in manifest['items']:
+                    logger.debug("Located item %s in dataset %s", item_uuid, dataset_uri)
+                    return True
+
+            except Exception as e:
+                exceptions.append(e)
+
+        return False
+
+        logger.debug("Present at %s", urls)
+
         if isinstance(self.dtool_dataset, ProtoDataSet):
             self.dtool_dataset.freeze()
             self.dtool_dataset = DataSet.from_uri(self.uri)
 
-        manifest = self.dtool_dataset.generate_manifest()
-        for _, entry in manifest['items'].items():
-            if entry["relpath"] == key:
-                return True
+
 
         return False
 
     def claimurl(self, url: str) -> bool:
-        return url.startswith("dtool")
+        return url.startswith("dtool:")
 
     def checkurl(self, url: str) -> bool:
-        return url.startswith("dtool")
+        return url.startswith("dtool:")
         # TODO: implement more sophisticated checking on URL
 
     def getcost(self) -> int:
