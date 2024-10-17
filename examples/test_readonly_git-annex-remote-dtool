@@ -36,9 +36,9 @@ dtool freeze "${SOURCE_DATASET}"
 
 ITEM_UUID=$(dtool ls "${SOURCE_DATASET}" | awk '{ print $1 }')
 
-git annex initremote --verbose --debug dtool_remote type=external externaltype=dtool encryption=none
+git annex initremote --verbose --debug dtool_remote type=external externaltype=dtool encryption=none uri="${SOURCE_DATASET}"
 
-git annex addurl --file testfile.txt "dtool:${SOURCE_DATASET}/${ITEM_UUID}"
+git annex addurl --backend=MD5E --file testfile.txt "dtool:${SOURCE_DATASET}/${ITEM_UUID}"
 
 # test read-only special remote
 git annex testremote --debug --verbose dtool_remote --test-readonly=testfile.txt 2>&1 | tail -n 1000
