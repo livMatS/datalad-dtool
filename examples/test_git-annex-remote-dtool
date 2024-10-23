@@ -1,0 +1,44 @@
+#!/bin/bash
+# Test script to drive the example external remote
+
+set -eu -o pipefail -x
+
+cd $(dirname "$0")
+
+export PATH=$PWD:$PATH
+
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/gar-XXXXXXX")"
+# so there is no global git config side-effects
+export HOME="$TMP"
+
+SOURCE_DATASET="file://$TMP/test-dataset"
+SOURCE_DATASET_NAME="test-dataset"
+REPO_DIR="$TMP/repo"
+cd "$TMP"
+
+echo "This is a test file." > testfile.txt
+
+TESTFILE_PATH="$TMP/testfile.txt"
+
+dtool create ${SOURCE_DATASET_NAME}
+
+mkdir -p "$REPO_DIR"
+
+cd "$REPO_DIR"
+git init
+git config user.email "someuser@gmail.com"
+git config user.name "Some User"
+git annex init
+
+# put item into dataset at git annex-expected key
+dtool add item "${TESTFILE_PATH}" "${SOURCE_DATASET}"
+dtool freeze "${SOURCE_DATASET}"
+
+ITEM_UUID=$(dtool ls "${SOURCE_DATASET}" | awk '{ print $1 }')
+
+git annex initremote --verbose --debug dtool_remote type=external externaltype=dtool encryption=none exporttree=yes uri="${SOURCE_DATASET}"
+
+git annex addurl --backend=MD5E --file testfile.txt "dtool:${SOURCE_DATASET}/${ITEM_UUID}"
+
+# test read-only special remote
+git annex testremote --debug --verbose dtool_remote --test-readonly=testfile.txt 2>&1 | tail -n 1000
