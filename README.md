@@ -27,35 +27,37 @@ command. For detailed usage information, see `datalad export-dtool --help`
 
 # Example usage of datalad export-dtool
 
-If not in an existing datalad folder, create one with a testfile
+Create a minimal datalad dataset with a testfile
 
-    datalad create testdir && cd testdir && echo "test" > testfile.txt
+    datalad create testdir
+    cd testdir
+    echo "test" > testfile.txt
 
-add the data to git-annex
+and add the data to git-annex
 
     datalad save
 
-then proceed to extract datalad to dtool with
+Then proceed to extract datalad to dtool with
 
-    cd .. && datalad export-dtool -n dtool-test -d testdir
+    cd ..
+    datalad export-dtool -n dtool-test -d testdir
 
 # Example usage of Datalad export to dtool
 
-You can check out our testrun at
-
-    https://github.com/livMatS/datalad-dtool/blob/dd8813c58576bdc47a7f20ac95a648746fdf4a71/examples/test_readonly_git-annex-remote-dtool
-
-to mimik a run you can create a dtool directory
+Create a dtool dataset
 
     dtool create another-test
 
-populate with data e.g.
+and populate it with data, e.g.
 
-    cd another-test/data && echo "another-test" > test_file.txt
+    cd another-test/data
+    echo "another-test" > test_file.txt
 
-then we need to freeze the dataset and get the MD5Hash
+Then, we freeze the dataset
 
     dtool freeze another-test
+
+and get the UUID.
 
 After these steps we can create the directory for the Datalad to populate from dtool. At the current time, we manually create a git and git annex repository to mimik a Datalad dataset and populate it using an git-annex-specialRemote
 
