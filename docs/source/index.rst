@@ -1,27 +1,26 @@
 DataLad dtool extension
 ***********************
 
-This is an extension for `DataLad <http://datalad.org>`__
-that equips DataLad with functionality related to dtool dataset.
+This is an extension for `DataLad <http://datalad.org>`__.
+It equips DataLad with import and export functionality for dtool dataset.
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Overview
 
-API
-===
-
-High-level API commands
------------------------
+   readme.rst
+   CONTRIBUTING.md
+   CHANGELOG.md
 
 .. toctree::
    :maxdepth: 2
+   :caption: Python API
 
    python_reference.rst
 
-
-Command line reference
-----------------------
-
 .. toctree::
    :maxdepth: 2
+   :caption: Command line interface
 
    cli_reference.rst
 

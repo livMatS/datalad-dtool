@@ -25,7 +25,7 @@ This is done with the
 
 command. For detailed usage information, see `datalad export-dtool --help`
 
-# Example usage of datalad export-dtool
+## Example usage of datalad export-dtool
 
 Create a minimal datalad dataset with a testfile
 
@@ -42,7 +42,7 @@ Then proceed to extract datalad to dtool with
     cd ..
     datalad export-dtool -n dtool-test -d testdir
 
-# Example usage of Datalad export to dtool
+## Example usage of Datalad export to dtool
 
 Create a dtool dataset
 
@@ -61,10 +61,7 @@ and get the UUID.
 
 After these steps we can create the directory for the Datalad to populate from dtool. At the current time, we manually create a git and git annex repository to mimik a Datalad dataset and populate it using an git-annex-specialRemote
 
-    
-
-
-# Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you are interested in internals or
 contributing to the project.

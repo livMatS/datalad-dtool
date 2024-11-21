@@ -7,3 +7,6 @@ coverage
 sphinx
 sphinx_rtd_theme
 sphinx_copybutton
+
+myst-parser
+linkify-it-py
