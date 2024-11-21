@@ -1,0 +1,34 @@
+#!/bin/bash
+# Test script to drive the example external remote
+
+set -eu -o pipefail -x
+
+cd $(dirname "$0")
+
+export PATH=$PWD:$PATH
+
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/gar-XXXXXXX")"
+# so there is no global git config side-effects
+export HOME="$TMP"
+
+URI="file://$TMP/my-dtool-dataset"
+
+cd "$TMP"
+
+dtool create my-dtool-dataset
+
+cd my-dtool-dataset/data
+
+echo "This is a test file" > testfile.txt
+
+cd "$TMP"
+
+dtool freeze my-dtool-dataset
+
+
+datalad create my-datalad-dataset
+
+# cd my-datalad-dataset
+
+datalad import-dtool --dataset my-datalad-dataset --path dtool-import "${URI}"
+

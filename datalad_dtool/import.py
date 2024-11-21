@@ -2,7 +2,8 @@
 
 __docformat__ = "restructuredtext"
 import logging
-from typing import Iterable, Literal, Optional, Union
+
+from typing import Literal, Optional
 
 from datalad.distribution.dataset import (
     EnsureDataset,
@@ -13,52 +14,41 @@ from datalad.interface.base import Interface, build_doc, eval_results
 from datalad.interface.common_opts import nosave_opt, save_message_opt
 from datalad.interface.results import get_status_dict
 from datalad.support.annexrepo import AnnexRepo
-from datalad.support.constraints import EnsureNone, EnsureStr
+from datalad.support.constraints import EnsureNone, EnsureStr, EnsureChoice
 from datalad.support.param import Parameter
 
 import datalad_dtool.dtool_remote
-# import datalad_cds.spec
 
-logger = logging.getLogger("datalad.cds.download_cds")
+from dtoolcore import DataSet
+from dtoolcore.utils import sanitise_uri
+
+logger = logging.getLogger("datalad.dtool.import")
 
 
 # decoration auto-generates standard help
 @build_doc
 # all commands must be derived from Interface
-class DownloadCDS(Interface):
-    """Downloads specified datasets from the CDS data store"""
+class DtoolImport(Interface):
+    """Import a dtool dataset into a datalad dataset"""
 
     _params_ = dict(
-        spec=Parameter(
-            doc="""A json string or python dictionary containing the key
-            "dataset" with the datasets name (i.e. what is shown as the first
-            parameter to cdsapi.Client.retrieve if you do a "Show API request"
-            on some dataset in the CDS) and the key "sub-selection" with the
-            sub-selection of the dataset that should be fetched (i.e. what is
-            shown as the second parameter to cdsapi.Client.retrieve).""",
-        ),
+        uri=Parameter(
+            args=("uri",),
+            metavar="URI",
+            doc="""dtool URI of dtool dataset to import.""",
+            constraints=EnsureStr() | EnsureNone()),
         dataset=Parameter(
             args=("-d", "--dataset"),
-            metavar="PATH",
-            doc="""specify the dataset to add files to. If no dataset is given,
-            an attempt is made to identify the dataset based on the current
-            working directory. Use [CMD: --nosave CMD][PY: save=False PY] to
-            prevent adding files to the dataset.""",
-            constraints=EnsureDataset() | EnsureNone(),
-        ),
+            doc="""specify the datalad dataset to add files to. If no 
+                   datalad dataset is given, an attempt is made to identify the dataset 
+                   based on the current working directory. Use 
+                   [CMD: --nosave CMD][PY: save=False PY] to
+                   prevent adding files to the dataset.""",
+            constraints=EnsureDataset() | EnsureNone()),
         path=Parameter(
             args=("-O", "--path"),
-            doc="""target path to download to.""",
-            constraints=EnsureStr(),
-        ),
-        lazy=Parameter(
-            args=("--lazy",),
-            action="store_true",
-            doc="""By default the file will be immediately downloaded. If the
-            lazy flag is supplied then the dtool dataset and item is only recorded as a
-            source for the file, but no download is initiated. Keep in mind that
-            there is no way to validate the correctness of the request if the
-            lazy flag is used.""",
+            doc="""Relative target path to import to within datalad dataset.""",
+            constraints=EnsureStr() | EnsureNone(),
         ),
         save=nosave_opt,
         message=save_message_opt,
@@ -68,51 +58,63 @@ class DownloadCDS(Interface):
     @datasetmethod(name="import_dtool")
     @eval_results
     def __call__(
-        spec: Union[str, dict],
-        path: str,
+        uri: str,
         *,
         dataset: Optional[str] = None,
+        path: Optional[str] = None,
         message: Optional[str] = None,
-        save: bool = True,
-        lazy: bool = False,
-    ) -> Iterable[dict]:
-        if isinstance(spec, dict):
-            parsed_spec = datalad_cds.spec.Spec.from_dict(spec)
-        elif isinstance(spec, str):
-            parsed_spec = datalad_cds.spec.Spec.from_json(spec)
-        else:
-            raise TypeError("spec could not be parsed")
+        save: bool = True):
+        # if uri is None:
+        #    uri = abspath(curdir)
+        sanitised_uri = sanitise_uri(uri)
+        logger.debug("Sanitized dtool dataset URI: %s", sanitised_uri)
+
+
         ds = require_dataset(dataset, check_installed=True)
-        ensure_special_remote_exists_and_is_enabled(ds.repo, "cds")
-        pathobj = ds.pathobj / path
-        url = parsed_spec.to_url()
-        options = []
-        if lazy:
-            options.append("--relaxed")
-        ds.repo.add_url_to_file(pathobj, url, options=options)
+        ensure_special_remote_exists_and_is_enabled(
+            repo=ds.repo, remote="dtool", uri=sanitised_uri)
+
+        if path is None:
+            pathobj = ds.pathobj
+        else:
+            pathobj = ds.pathobj / path
+
+        dtool_dataset = DataSet.from_uri(sanitised_uri)
+        manifest = dtool_dataset.generate_manifest()
+        for uuid, entry in manifest['items'].items():
+            relpath = entry["relpath"]
+            file_pathobj = pathobj / relpath
+            dtool_item_uri = f'dtool:{uri}/{uuid}'
+            logger.debug(
+                "Import dtool dataset URI '%s' item '%s' to path '%s' within '%s'",
+                sanitised_uri, uuid, relpath, pathobj)
+            ds.repo.add_url_to_file(file_pathobj, dtool_item_uri)
+
         if save:
             msg = (
                 message
                 if message is not None
-                else "[DATALAD] Download from Climate Data Store"
+                else "[DATALAD] import from dtool dataset '{}'".format(uri)
             )
             yield ds.save(pathobj, message=msg)
-        yield get_status_dict(action="cds", ds=ds, status="ok")
+
+        yield get_status_dict(action="import-dtool", ds=ds, status="ok")
 
 
 def ensure_special_remote_exists_and_is_enabled(
-    repo: AnnexRepo, remote: Literal["dtool"]
+    repo: AnnexRepo, remote: Literal["dtool"], uri: str,
 ) -> None:
     """Initialize and enable the dtool special remote, if it isn't already.
 
     Very similar to datalad.customremotes.base.ensure_datalad_remote.
     """
 
-    uuids = {"cds": datalad_dtool.dtool_remote.DTOOL_REMOTE_UUID}
+    uuids = {"dtool": datalad_dtool.dtool_remote.DTOOL_REMOTE_UUID}
     uuid = uuids[remote]
 
     name = repo.get_special_remotes().get(uuid, {}).get("name")
     if not name:
+        logger.debug("no suitable special remote found, initialize dtool remote")
         repo.init_remote(
             remote,
             [
@@ -121,6 +123,7 @@ def ensure_special_remote_exists_and_is_enabled(
                 "autoenable=true",
                 "externaltype={}".format(remote),
                 "uuid={}".format(uuid),
+                "uri={}".format(uri)
             ],
         )
     elif repo.is_special_annex_remote(name, check_if_known=False):

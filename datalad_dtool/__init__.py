@@ -23,6 +23,12 @@ command_suite = (
             # optional name of the command in the Python API
             'export_dtool'
         ),
+        (
+            'datalad_dtool.import',
+            'DtoolImport',
+            'import-dtool',
+            'import_dtool'
+        ),
     ]
 )
 
