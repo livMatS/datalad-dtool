@@ -72,6 +72,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx_copybutton',
+    'sphinx.ext.autosectionlabel',
+    'myst_parser',
 ]
 
 # for the module reference
@@ -144,3 +146,18 @@ html_show_sourcelink = False
 # but see `smartquotes_action` for more fine-grained control, in case
 # some of this functionality is needed
 smartquotes = False
+
+myst_enable_extensions = [
+    "linkify",
+]
+
+# Enable autosectionlabel for cross-referencing
+autosectionlabel_prefix_document = True
+
+# Configure myst-parser to handle Markdown files
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+suppress_warnings = ["myst.header"]
