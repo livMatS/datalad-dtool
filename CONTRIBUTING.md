@@ -1,3 +1,5 @@
+# Contributing
+
 ## Releasing with GitHub Actions and pull requests
 
 New releases of this project are created via a GitHub Actions workflow using
@@ -9,7 +11,7 @@ results, tags the new commit with the next version number, creates a GitHub
 release for the tag, builds an sdist & wheel for the project, and uploads the
 sdist & wheel to PyPI.
 
-### CHANGELOG entries and labelling pull requests
+## CHANGELOG entries and labelling pull requests
 
 This project uses [scriv](https://github.com/nedbat/scriv/) to maintain the
 [CHANGELOG.md](./CHANGELOG.md) file.  Adding the label `CHANGELOG-missing` to a
