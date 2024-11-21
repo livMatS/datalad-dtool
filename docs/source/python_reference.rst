@@ -6,3 +6,4 @@ High-level API commands
    :toctree: generated
 
    export_dtool
+   import_dtool
