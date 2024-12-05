@@ -13,20 +13,29 @@ jobs:
       run: |
         git config --global user.email "test@github.land"
         git config --global user.name "GitHub Almighty"
+
     - uses: actions/checkout@v4
+
     - name: Set up Python 3.8
       uses: actions/setup-python@v5
       with:
         python-version: 3.8
+
     - name: Install dependencies
       run: |
         sudo apt-get install -y git-annex
         python -m pip install --upgrade pip
         pip install -r requirements-devel.txt
         pip install .
+
+    - name: run special remote test
+      run: |
+        bash  examples/test_readonly_git-annex-remote-dtool
+
     - name: run export script
       run: |
         bash examples/test_datalad_export_dtool
+
     - name: run import script
       run: |
         bash  examples/test_datalad_import_dtool

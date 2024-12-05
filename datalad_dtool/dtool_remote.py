@@ -7,12 +7,8 @@ from annexremote import RemoteError
 
 from dtoolcore import DataSet, ProtoDataSet, DtoolCoreTypeError
 
-logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
-
-
-DTOOL_REMOTE_UUID = "84edd3a6-0906-4120-bc0d-7e252f95987e"
 
 
 def extract_backend(key):
