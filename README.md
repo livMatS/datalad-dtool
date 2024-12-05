@@ -55,11 +55,20 @@ and populate it with data, e.g.
 
 Then, we freeze the dataset
 
+    cd ..
     dtool freeze another-test
 
-and get the UUID.
+and get the path. Create a datalad dataset if not already done
 
-After these steps we can create the directory for the Datalad to populate from dtool. At the current time, we manually create a git and git annex repository to mimik a Datalad dataset and populate it using an git-annex-specialRemote
+    datalad create my-datalad-dataset
+
+Then import the dtool-dataset to datalad with
+
+    datalad import-dtool --dataset my-datalad-dataset --path dtool-import another-test
+
+Check that dtool-dataset is still viable
+
+    dtool ls my-datalad-dataset/another-test
 
 ## Contributing
 
