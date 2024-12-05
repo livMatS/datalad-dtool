@@ -25,8 +25,8 @@ jobs:
         pip install .
     - name: run export script
       run: |
-        bash /examples/test_datalad_export_dtool
+        bash examples/test_datalad_export_dtool
     - name: run import script
       run: |
-        bash  /examples/test_datalad_import_dtool
+        bash  examples/test_datalad_import_dtool
 
