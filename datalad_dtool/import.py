@@ -17,8 +17,6 @@ from datalad.support.annexrepo import AnnexRepo
 from datalad.support.constraints import EnsureNone, EnsureStr, EnsureChoice
 from datalad.support.param import Parameter
 
-import datalad_dtool.dtool_remote
-
 from dtoolcore import DataSet
 from dtoolcore.utils import sanitise_uri
 
@@ -64,15 +62,13 @@ class DtoolImport(Interface):
         path: Optional[str] = None,
         message: Optional[str] = None,
         save: bool = True):
-        # if uri is None:
-        #    uri = abspath(curdir)
+
         sanitised_uri = sanitise_uri(uri)
         logger.debug("Sanitized dtool dataset URI: %s", sanitised_uri)
 
-
         ds = require_dataset(dataset, check_installed=True)
         ensure_special_remote_exists_and_is_enabled(
-            repo=ds.repo, remote="dtool", uri=sanitised_uri)
+            repo=ds.repo, uri=sanitised_uri)
 
         if path is None:
             pathobj = ds.pathobj
@@ -84,7 +80,7 @@ class DtoolImport(Interface):
         for uuid, entry in manifest['items'].items():
             relpath = entry["relpath"]
             file_pathobj = pathobj / relpath
-            dtool_item_uri = f'dtool:{uri}/{uuid}'
+            dtool_item_uri = f'dtool:{sanitised_uri}/{uuid}'
             logger.debug(
                 "Import dtool dataset URI '%s' item '%s' to path '%s' within '%s'",
                 sanitised_uri, uuid, relpath, pathobj)
@@ -102,32 +98,39 @@ class DtoolImport(Interface):
 
 
 def ensure_special_remote_exists_and_is_enabled(
-    repo: AnnexRepo, remote: Literal["dtool"], uri: str,
+    repo: AnnexRepo, uri: str,
 ) -> None:
     """Initialize and enable the dtool special remote, if it isn't already.
 
     Very similar to datalad.customremotes.base.ensure_datalad_remote.
     """
 
-    uuids = {"dtool": datalad_dtool.dtool_remote.DTOOL_REMOTE_UUID}
-    uuid = uuids[remote]
+    special_remotes = repo.get_special_remotes()
 
-    name = repo.get_special_remotes().get(uuid, {}).get("name")
-    if not name:
+    special_remote_candidate = None
+    for uuid, special_remote in special_remotes.items():
+        if special_remote.get('externaltype', None) == 'dtool':
+            if special_remote.get('uri', None) == uri:
+                special_remote_candidate = special_remote
+                break
+
+    if special_remote_candidate is None:
+        uri_hash = hash(uri)
+        hex_uri_hash = hex(uri_hash)[2:]
+        name = f"dtool-{hex_uri_hash}"
         logger.debug("no suitable special remote found, initialize dtool remote")
         repo.init_remote(
-            remote,
+            name,
             [
                 "encryption=none",
                 "type=external",
                 "autoenable=true",
-                "externaltype={}".format(remote),
-                "uuid={}".format(uuid),
+                "externaltype=dtool",
                 "uri={}".format(uri)
             ],
         )
-    elif repo.is_special_annex_remote(name, check_if_known=False):
-        logger.debug("special remote %s is enabled", name)
+    elif repo.is_special_annex_remote(special_remote_candidate["name"], check_if_known=False):
+        logger.debug("special remote %s is enabled", special_remote_candidate["name"])
     else:
-        logger.debug("special remote %s found, enabling", name)
-        repo.enable_remote(name)
+        logger.debug("special remote %s found, enabling", special_remote_candidate["name"])
+        repo.enable_remote(special_remote_candidate["name"])
