@@ -42,7 +42,7 @@ Then proceed to extract datalad to dtool with
     cd ..
     datalad export-dtool -n dtool-test -d testdir
 
-## Example usage of Datalad export to dtool
+## Example usage of datalad import-dtool
 
 Create a dtool dataset
 
@@ -85,18 +85,6 @@ drwxrwxr-x 5 jotelha jotelha 4,0K Dez  5 13:55 ..
 lrwxrwxrwx 1 jotelha jotelha  121 Dez  5 13:55 test_file.txt -> ../.git/annex/objects/PQ/x9/MD5E-s13--fc2fb139c72a8606580ce5c98f7a688f.txt/MD5E-s13--fc2fb139c72a8606580ce5c98f7a688f.txt
 ```
 
-Similarly, import from any remote dtool endpoint, e.g. the ones available on
-the *dserver* test instance [demo.dtool.dev](https://demo.dtool.dev),
-
-```bash
-datalad import-dtool --dataset my-datalad-dataset --path from-s3-endpoint s3://test-bucket/1a1f9fad-8589-413e-9602-5bbd66bfe675
-```
-
-or
-
-```bash
-datalad import-dtool --dataset my-datalad-dataset --path from-smb-endpoint smb://test-share/01211ad2-45ee-42f3-bc82-b24725462605
-```
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you are interested in internals or
