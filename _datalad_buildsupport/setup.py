@@ -13,7 +13,11 @@ from os.path import (
     dirname,
     join as opj,
 )
-from setuptools import Command, DistutilsOptionError
+try:
+    from setuptools import Command, DistutilsOptionError
+except ImportError:
+    from setuptools.errors import OptionError as DistutilsOptionError
+    from setuptools import Command
 from setuptools.config import read_configuration
 
 import versioneer
